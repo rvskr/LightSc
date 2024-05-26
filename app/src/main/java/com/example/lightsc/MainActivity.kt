@@ -18,7 +18,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
-
     private lateinit var intervalInput: EditText
     private lateinit var wifiCountInput: EditText
     private lateinit var startStopButton: Button
@@ -26,10 +25,14 @@ class MainActivity : AppCompatActivity() {
     private var isAlarmRunning = false
     private lateinit var sharedPreferences: SharedPreferences
     private var serviceIntent: Intent? = null
+    private lateinit var updateChecker: UpdateChecker
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        updateChecker = UpdateChecker(this)
+        updateChecker.checkForUpdates()
 
         intervalInput = findViewById(R.id.interval_input)
         wifiCountInput = findViewById(R.id.wifi_count_input)
@@ -54,7 +57,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestPermissions() {
-        Log.d(TAG, "Requesting permissions...")
         val permissions = mutableListOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.RECORD_AUDIO

@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -54,13 +55,39 @@ class MainActivity : AppCompatActivity() {
 
     private fun requestPermissions() {
         Log.d(TAG, "Requesting permissions...")
-        val permissions = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        val permissions = mutableListOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.RECORD_AUDIO
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
         val permissionsToRequest = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }.toTypedArray()
 
         if (permissionsToRequest.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, permissionsToRequest, PERMISSIONS_REQUEST_CODE)
+        } else {
+            Log.d(TAG, "All permissions are already granted")
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PERMISSIONS_REQUEST_CODE) {
+            val deniedPermissions = permissions.indices.filter { grantResults[it] != PackageManager.PERMISSION_GRANTED }
+            if (deniedPermissions.isNotEmpty()) {
+                Toast.makeText(this, "Some permissions were denied", Toast.LENGTH_SHORT).show()
+            } else {
+                Log.d(TAG, "All permissions granted")
+            }
         }
     }
 

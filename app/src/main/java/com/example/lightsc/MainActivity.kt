@@ -1,3 +1,4 @@
+// MainActivity.kt
 package com.example.lightsc
 
 import android.Manifest
@@ -20,6 +21,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var intervalInput: EditText
     private lateinit var wifiCountInput: EditText
     private lateinit var startStopButton: Button
+    private lateinit var disableTelegramButton: Button
     private var isAlarmRunning = false
     private lateinit var sharedPreferences: SharedPreferences
     private var serviceIntent: Intent? = null
@@ -31,6 +33,7 @@ class MainActivity : AppCompatActivity() {
         intervalInput = findViewById(R.id.interval_input)
         wifiCountInput = findViewById(R.id.wifi_count_input)
         startStopButton = findViewById(R.id.start_stop_button)
+        disableTelegramButton = findViewById(R.id.disable_telegram_button)
 
         sharedPreferences = getSharedPreferences("com.example.lightsc", Context.MODE_PRIVATE)
 
@@ -40,6 +43,10 @@ class MainActivity : AppCompatActivity() {
             } else {
                 startAlarm()
             }
+        }
+
+        disableTelegramButton.setOnClickListener {
+            toggleTelegramFunctionality()
         }
 
         // Запрашиваем разрешения при запуске приложения
@@ -80,7 +87,7 @@ class MainActivity : AppCompatActivity() {
         val logMessage = "Alarm started with interval $interval ms and required Wi-Fi count $requiredCount"
         Log.d(TAG, logMessage)
         // Отправляем лог в Телеграм
-        sendTelegramMessage(logMessage)
+        TelegramManager.sendTelegramMessage(logMessage)
 
         startStopButton.text = "Stop"
         isAlarmRunning = true
@@ -101,7 +108,7 @@ class MainActivity : AppCompatActivity() {
         val logMessage = "Alarm stopped"
         Log.d(TAG, logMessage)
         // Отправляем лог в Телеграм
-        sendTelegramMessage(logMessage)
+        TelegramManager.sendTelegramMessage(logMessage)
 
         Toast.makeText(this, "Alarm stopped", Toast.LENGTH_SHORT).show()
         startStopButton.text = "Start"
@@ -120,6 +127,15 @@ class MainActivity : AppCompatActivity() {
         serviceIntent?.let {
             stopService(it)
             serviceIntent = null
+        }
+    }
+
+    private fun toggleTelegramFunctionality() {
+        TelegramManager.toggleTelegramEnabled()
+        if (TelegramManager.isTelegramEnabled()) {
+            disableTelegramButton.text = "Disable Telegram"
+        } else {
+            disableTelegramButton.text = "Enable Telegram"
         }
     }
 

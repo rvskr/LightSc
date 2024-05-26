@@ -13,15 +13,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLEncoder
 
 class WifiAlarmReceiver : BroadcastReceiver() {
 
@@ -57,7 +49,8 @@ class WifiAlarmReceiver : BroadcastReceiver() {
                 Log.d(TAG, "Required Wi-Fi count: $requiredCount")
 
                 // Отправляем лог в Telegram
-                sendLogToTelegram(wifiList.size, requiredCount)
+                val message = "Number of Wi-Fi networks found: ${wifiList.size}\nRequired Wi-Fi count: $requiredCount"
+                TelegramManager.sendTelegramMessage(message)
 
                 // Проверяем условие перед воспроизведением звука
                 if (wifiList.size >= requiredCount) {
@@ -111,11 +104,6 @@ class WifiAlarmReceiver : BroadcastReceiver() {
         } else {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
         }
-    }
-
-    private fun sendLogToTelegram(actualCount: Int, requiredCount: Int) {
-        val message = "Number of Wi-Fi networks found: $actualCount\nRequired Wi-Fi count: $requiredCount"
-        sendTelegramMessage(message)
     }
 
     companion object {

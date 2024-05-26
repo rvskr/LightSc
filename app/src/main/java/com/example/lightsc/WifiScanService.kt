@@ -19,8 +19,6 @@ class WifiScanService : Service() {
     private var isScanning = false
     private var scanInterval: Long = 60000 // 60 секунд
     private val CHANNEL_ID = "WifiScanServiceChannel"
-    private val telegramBotToken = "6923582894:AAHuYGsJuKLsKCcVccnN8kbsdRzC8vTiFVE"
-    private val chatId = "558625598"
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "WifiScanService onStartCommand() called")
@@ -58,7 +56,7 @@ class WifiScanService : Service() {
 
             // Отправляем лог в Telegram
             val logs = "WifiScanService started"
-            sendTelegramMessage(logs)
+            TelegramManager.sendTelegramMessage(logs)
         }
     }
 
@@ -80,7 +78,7 @@ class WifiScanService : Service() {
 
         // Отправляем лог в Telegram при завершении сервиса
         val logs = "WifiScanService stopped"
-        sendTelegramMessage(logs)
+        TelegramManager.sendTelegramMessage(logs)
     }
 
     override fun onBind(intent: Intent?): IBinder? {

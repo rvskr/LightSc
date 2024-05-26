@@ -1,4 +1,3 @@
-// MainActivity.kt
 package com.example.lightsc
 
 import android.Manifest
@@ -18,6 +17,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
+
     private lateinit var intervalInput: EditText
     private lateinit var wifiCountInput: EditText
     private lateinit var startStopButton: Button
@@ -49,15 +49,12 @@ class MainActivity : AppCompatActivity() {
             toggleTelegramFunctionality()
         }
 
-        // Запрашиваем разрешения при запуске приложения
         requestPermissions()
     }
 
     private fun requestPermissions() {
         Log.d(TAG, "Requesting permissions...")
-        val permissions = arrayOf(
-            Manifest.permission.ACCESS_FINE_LOCATION
-        )
+        val permissions = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
         val permissionsToRequest = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }.toTypedArray()
@@ -68,36 +65,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startAlarm() {
-        val interval = intervalInput.text.toString().toLong() * 1000 // Преобразуем секунды в миллисекунды
-        val requiredCount = wifiCountInput.text.toString().toInt() // Получаем требуемое количество Wi-Fi сетей
+        val interval = intervalInput.text.toString().toLong() * 1000
+        val requiredCount = wifiCountInput.text.toString().toInt()
 
-        // Создаем новый Intent для передачи данных в BroadcastReceiver
         val alarmIntent = Intent(this, WifiAlarmReceiver::class.java).apply {
             putExtra("requiredCount", requiredCount)
             putExtra("interval", interval)
         }
 
-        // Остальной код оставляем без изменений
         val pendingIntent = PendingIntent.getBroadcast(this, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT)
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        pendingIntent?.let {
-            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), interval, it)
-        }
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), interval, pendingIntent)
 
-        val logMessage = "Alarm started with interval $interval ms and required Wi-Fi count $requiredCount"
-        Log.d(TAG, logMessage)
-        // Отправляем лог в Телеграм
-        TelegramManager.sendTelegramMessage(logMessage)
-
+        logAndToast("Alarm started with interval $interval ms and required Wi-Fi count $requiredCount")
         startStopButton.text = "Stop"
         isAlarmRunning = true
 
-        // Запускаем фоновый сервис
-        startWifiScanService()
+        startWifiScanService(interval)
     }
 
     private fun stopAlarm() {
-        // Удаляем значение из SharedPreferences при остановке будильника
         sharedPreferences.edit().remove("wifiCount").apply()
 
         val alarmIntent = Intent(this, WifiAlarmReceiver::class.java)
@@ -105,22 +92,18 @@ class MainActivity : AppCompatActivity() {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(pendingIntent)
 
-        val logMessage = "Alarm stopped"
-        Log.d(TAG, logMessage)
-        // Отправляем лог в Телеграм
-        TelegramManager.sendTelegramMessage(logMessage)
-
-        Toast.makeText(this, "Alarm stopped", Toast.LENGTH_SHORT).show()
+        logAndToast("Alarm stopped")
         startStopButton.text = "Start"
         isAlarmRunning = false
 
-        // Останавливаем фоновый сервис
         stopWifiScanService()
     }
 
-    private fun startWifiScanService() {
-        serviceIntent = Intent(this, WifiScanService::class.java)
-        ContextCompat.startForegroundService(this, serviceIntent!!)
+    private fun startWifiScanService(interval: Long) {
+        val serviceIntent = Intent(this, WifiScanService::class.java).apply {
+            putExtra("scanInterval", interval)
+        }
+        ContextCompat.startForegroundService(this, serviceIntent)
     }
 
     private fun stopWifiScanService() {
@@ -132,11 +115,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun toggleTelegramFunctionality() {
         TelegramManager.toggleTelegramEnabled()
-        if (TelegramManager.isTelegramEnabled()) {
-            disableTelegramButton.text = "Disable Telegram"
-        } else {
-            disableTelegramButton.text = "Enable Telegram"
-        }
+        disableTelegramButton.text = if (TelegramManager.isTelegramEnabled()) "Disable Telegram" else "Enable Telegram"
+    }
+
+    private fun logAndToast(message: String) {
+        Log.d(TAG, message)
+        TelegramManager.sendTelegramMessage(message)
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     companion object {

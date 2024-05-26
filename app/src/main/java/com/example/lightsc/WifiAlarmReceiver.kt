@@ -20,69 +20,46 @@ class WifiAlarmReceiver : BroadcastReceiver() {
     private var mediaPlayer: MediaPlayer? = null
 
     override fun onReceive(context: Context, intent: Intent) {
-        Log.d(TAG, "Wi-Fi Alarm received")
-
         val requiredCount = intent.getIntExtra("requiredCount", 0)
         val interval = intent.getLongExtra("interval", 0)
-
-        // Сканируем доступные Wi-Fi сети и отправляем лог в Telegram
         handleWifiScanResults(context, requiredCount, interval)
     }
 
     private fun handleWifiScanResults(context: Context, requiredCount: Int, interval: Long) {
-        // Проверяем наличие разрешения на доступ к информации о Wi-Fi сетях
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            // Получаем менеджер Wi-Fi
             val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-
-            // Запускаем сканирование Wi-Fi сетей
             wifiManager.startScan()
 
-            // Обработка результатов сканирования через задержку, чтобы дождаться завершения сканирования
             Handler(Looper.getMainLooper()).postDelayed({
                 val wifiList = wifiManager.scanResults
+                logAndNotify("Number of Wi-Fi networks found: ${wifiList.size}")
+                logAndNotify("Required Wi-Fi count: $requiredCount")
 
-                // Логируем количество доступных Wi-Fi сетей
-                Log.d(TAG, "Number of Wi-Fi networks found: ${wifiList.size}")
-
-                // Логируем требуемое количество Wi-Fi сетей
-                Log.d(TAG, "Required Wi-Fi count: $requiredCount")
-
-                // Отправляем лог в Telegram
-                val message = "Number of Wi-Fi networks found: ${wifiList.size}\nRequired Wi-Fi count: $requiredCount"
-                TelegramManager.sendTelegramMessage(message)
-
-                // Проверяем условие перед воспроизведением звука
                 if (wifiList.size >= requiredCount) {
-                    Log.d(TAG, "Number of Wi-Fi networks found is sufficient for playback")
+                    logAndNotify("Number of Wi-Fi networks found is sufficient for playback")
                     playSound(context)
                 } else {
-                    Log.d(TAG, "Number of Wi-Fi networks found is less than required count")
+                    logAndNotify("Number of Wi-Fi networks found is less than required count")
                 }
 
-                // Планируем следующий запуск будильника
                 scheduleNextAlarm(context, requiredCount, interval)
             }, SCAN_RESULTS_DELAY_MS)
         } else {
-            Log.e(TAG, "Missing ACCESS_FINE_LOCATION permission")
+            logAndNotify("Missing ACCESS_FINE_LOCATION permission")
         }
     }
 
     private fun playSound(context: Context) {
         try {
             val soundResource = R.raw.sound_file
-            if (soundResource == 0) {
-                Log.e(TAG, "Sound resource not found")
-                return
+            mediaPlayer = MediaPlayer.create(context, soundResource).apply {
+                setOnCompletionListener {
+                    logAndNotify("Sound playback completed")
+                }
+                start()
             }
-
-            mediaPlayer = MediaPlayer.create(context, soundResource)
-            mediaPlayer?.setOnCompletionListener {
-                Log.d(TAG, "Sound playback completed")
-            }
-            mediaPlayer?.start()
         } catch (e: Exception) {
-            Log.e(TAG, "Error playing sound: ${e.message}")
+            logAndNotify("Error playing sound: ${e.message}")
         }
     }
 
@@ -92,11 +69,7 @@ class WifiAlarmReceiver : BroadcastReceiver() {
             putExtra("interval", interval)
         }
         val pendingIntent = PendingIntent.getBroadcast(context, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT)
-
-        // Получаем AlarmManager и устанавливаем сигнал будильника
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-
-        // Устанавливаем время, через которое нужно запустить ресивер снова
         val triggerTime = System.currentTimeMillis() + interval
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -106,8 +79,13 @@ class WifiAlarmReceiver : BroadcastReceiver() {
         }
     }
 
+    private fun logAndNotify(message: String) {
+        Log.d(TAG, message)
+        TelegramManager.sendTelegramMessage(message)
+    }
+
     companion object {
         private const val TAG = "WifiAlarmReceiver"
-        private const val SCAN_RESULTS_DELAY_MS = 3000L // Задержка для получения результатов сканирования Wi-Fi
+        private const val SCAN_RESULTS_DELAY_MS = 3000L
     }
 }

@@ -17,16 +17,17 @@ class WifiScanService : Service() {
 
     private lateinit var wifiManager: WifiManager
     private var isScanning = false
-    private var scanInterval: Long = 60000 // 60 секунд
+    private var scanInterval: Long = DEFAULT_SCAN_INTERVAL
+    private val handler = Handler(Looper.getMainLooper())
     private val CHANNEL_ID = "WifiScanServiceChannel"
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(TAG, "WifiScanService onStartCommand() called")
+        val interval = intent?.getLongExtra("scanInterval", DEFAULT_SCAN_INTERVAL) ?: DEFAULT_SCAN_INTERVAL
+        scanInterval = interval
+        logAndNotify("Received scan interval: $scanInterval milliseconds")
 
-        // Получаем менеджер Wi-Fi
         wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
-        // Создаем уведомление для сервиса
         createNotificationChannel()
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
@@ -34,29 +35,24 @@ class WifiScanService : Service() {
             .setSmallIcon(R.drawable.ic_notification)
             .build()
 
-        // Запускаем сервис в foreground режиме
         startForeground(1, notification)
-
-        // Запускаем сканирование Wi-Fi сетей
         startWifiScan()
 
-        // Возвращаем флаг, чтобы сервис не был автоматически перезапущен после прекращения работы
         return START_NOT_STICKY
     }
 
     private fun startWifiScan() {
         if (!isScanning) {
             isScanning = true
-            val handler = Handler(Looper.getMainLooper())
-            handler.postDelayed({
-                wifiManager.startScan()
-                // Повторяем сканирование через определенный интервал времени
-                handler.postDelayed({ startWifiScan() }, scanInterval)
-            }, 1000) // Небольшая задержка перед началом сканирования
+            handler.post(scanRunnable)
+        }
+    }
 
-            // Отправляем лог в Telegram
-            val logs = "WifiScanService started"
-            TelegramManager.sendTelegramMessage(logs)
+    private val scanRunnable = object : Runnable {
+        override fun run() {
+            wifiManager.startScan()
+            logAndNotify("Wi-Fi scan started with interval $scanInterval")
+            handler.postDelayed(this, scanInterval)
         }
     }
 
@@ -72,13 +68,15 @@ class WifiScanService : Service() {
         }
     }
 
+    private fun logAndNotify(message: String) {
+        Log.d(TAG, message)
+        TelegramManager.sendTelegramMessage(message)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAG, "WifiScanService onDestroy() called")
-
-        // Отправляем лог в Telegram при завершении сервиса
-        val logs = "WifiScanService stopped"
-        TelegramManager.sendTelegramMessage(logs)
+        handler.removeCallbacks(scanRunnable)
+        logAndNotify("WifiScanService stopped")
     }
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -87,5 +85,6 @@ class WifiScanService : Service() {
 
     companion object {
         private const val TAG = "WifiScanService"
+        private const val DEFAULT_SCAN_INTERVAL = 60000L
     }
 }

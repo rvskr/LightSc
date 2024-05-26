@@ -44,8 +44,10 @@ class MainActivity : AppCompatActivity() {
         startStopButton.setOnClickListener {
             if (isAlarmRunning) {
                 stopAlarm()
+                stopWifiScanService()
             } else {
                 startAlarm()
+                startWifiScanService()
             }
         }
 
@@ -110,7 +112,6 @@ class MainActivity : AppCompatActivity() {
         startStopButton.text = "Stop"
         isAlarmRunning = true
 
-        startWifiScanService(interval)
     }
 
     private fun stopAlarm() {
@@ -124,16 +125,17 @@ class MainActivity : AppCompatActivity() {
         logAndToast("Alarm stopped")
         startStopButton.text = "Start"
         isAlarmRunning = false
-
-        stopWifiScanService()
     }
 
-    private fun startWifiScanService(interval: Long) {
+    private fun startWifiScanService() {
+        val interval = intervalInput.text.toString().toLong() * 1000 // Преобразуем секунды в миллисекунды
         val serviceIntent = Intent(this, WifiScanService::class.java).apply {
             putExtra("scanInterval", interval)
         }
         ContextCompat.startForegroundService(this, serviceIntent)
+        this.serviceIntent = serviceIntent // сохраняем ссылку на сервис, чтобы остановить его при остановке будильника
     }
+
 
     private fun stopWifiScanService() {
         serviceIntent?.let {

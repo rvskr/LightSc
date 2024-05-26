@@ -17,14 +17,16 @@ class WifiScanService : Service() {
 
     private lateinit var wifiManager: WifiManager
     private var isScanning = false
-    private var scanInterval: Long = DEFAULT_SCAN_INTERVAL
+    private var scanInterval: Long = 0
     private val handler = Handler(Looper.getMainLooper())
     private val CHANNEL_ID = "WifiScanServiceChannel"
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val interval = intent?.getLongExtra("scanInterval", DEFAULT_SCAN_INTERVAL) ?: DEFAULT_SCAN_INTERVAL
-        scanInterval = interval
-        logAndNotify("Received scan interval: $scanInterval milliseconds")
+        val interval = intent?.getLongExtra("scanInterval", 0)
+        interval?.let {
+            scanInterval = it
+            logAndNotify("Received scan interval: $scanInterval milliseconds")
+        }
 
         wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
@@ -42,7 +44,7 @@ class WifiScanService : Service() {
     }
 
     private fun startWifiScan() {
-        if (!isScanning) {
+        if (!isScanning && scanInterval > 0) {
             isScanning = true
             handler.post(scanRunnable)
         }
@@ -85,6 +87,5 @@ class WifiScanService : Service() {
 
     companion object {
         private const val TAG = "WifiScanService"
-        private const val DEFAULT_SCAN_INTERVAL = 60000L
     }
 }

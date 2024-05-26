@@ -1,0 +1,6 @@
+<!-- strings.xml -->
+<resources>
+    <string name="app_name">LightSC</string>
+    <string name="scanning_wifi">Scanning Wi-Fi...</string>
+    <string name="notification_channel_name">Wi-Fi Scan Service</string>
+</resources>

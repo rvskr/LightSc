@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <EditText
+        android:id="@+id/interval_input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Interval (seconds)"
+        android:inputType="number" />
+
+    <EditText
+        android:id="@+id/wifi_count_input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/interval_input"
+        android:hint="Required Wi-Fi count"
+        android:inputType="number" />
+
+    <Button
+        android:id="@+id/start_stop_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/wifi_count_input"
+        android:text="Start" />
+
+
+
+</RelativeLayout>

@@ -23,10 +23,10 @@ class WifiScanService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val interval = intent?.getLongExtra("scanInterval", 0)
-        interval?.let {
-            scanInterval = it
-            logAndNotify("Received scan interval: $scanInterval milliseconds")
+        if (interval != null) {
+            scanInterval = interval
         }
+        logAndNotify("Received scan interval: $scanInterval milliseconds")
 
         wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
@@ -44,7 +44,7 @@ class WifiScanService : Service() {
     }
 
     private fun startWifiScan() {
-        if (!isScanning && scanInterval > 0) {
+        if (!isScanning) {
             isScanning = true
             handler.post(scanRunnable)
         }

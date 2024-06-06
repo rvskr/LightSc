@@ -31,8 +31,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        updateChecker = UpdateChecker(this)
-        updateChecker.checkForUpdates()
+        updateChecker = UpdateChecker(this).apply {
+            checkForUpdates()
+        }
 
         intervalInput = findViewById(R.id.interval_input)
         wifiCountInput = findViewById(R.id.wifi_count_input)
@@ -46,8 +47,10 @@ class MainActivity : AppCompatActivity() {
                 stopAlarm()
                 stopWifiScanService()
             } else {
-                startAlarm()
-                startWifiScanService()
+                if (validateInput()) {
+                    startAlarm()
+                    startWifiScanService()
+                }
             }
         }
 
@@ -62,10 +65,10 @@ class MainActivity : AppCompatActivity() {
         val permissions = mutableListOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.RECORD_AUDIO
-        )
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        ).apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+            }
         }
 
         val permissionsToRequest = permissions.filter {
@@ -86,8 +89,7 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSIONS_REQUEST_CODE) {
-            val deniedPermissions = permissions.indices.filter { grantResults[it] != PackageManager.PERMISSION_GRANTED }
-            if (deniedPermissions.isNotEmpty()) {
+            if (grantResults.any { it != PackageManager.PERMISSION_GRANTED }) {
                 Toast.makeText(this, "Some permissions were denied", Toast.LENGTH_SHORT).show()
             } else {
                 Log.d(TAG, "All permissions granted")
@@ -111,7 +113,6 @@ class MainActivity : AppCompatActivity() {
         logAndToast("Alarm started with interval $interval ms and required Wi-Fi count $requiredCount")
         startStopButton.text = "Stop"
         isAlarmRunning = true
-
     }
 
     private fun stopAlarm() {
@@ -129,13 +130,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun startWifiScanService() {
         val interval = intervalInput.text.toString().toLong() * 1000 // Преобразуем секунды в миллисекунды
-        val serviceIntent = Intent(this, WifiScanService::class.java).apply {
+        serviceIntent = Intent(this, WifiScanService::class.java).apply {
             putExtra("scanInterval", interval)
+        }.also {
+            ContextCompat.startForegroundService(this, it)
         }
-        ContextCompat.startForegroundService(this, serviceIntent)
-        this.serviceIntent = serviceIntent // сохраняем ссылку на сервис, чтобы остановить его при остановке будильника
     }
-
 
     private fun stopWifiScanService() {
         serviceIntent?.let {
@@ -147,6 +147,20 @@ class MainActivity : AppCompatActivity() {
     private fun toggleTelegramFunctionality() {
         TelegramManager.toggleTelegramEnabled()
         disableTelegramButton.text = if (TelegramManager.isTelegramEnabled()) "Disable Telegram" else "Enable Telegram"
+    }
+
+    private fun validateInput(): Boolean {
+        return when {
+            intervalInput.text.isEmpty() -> {
+                Toast.makeText(this, "Please enter interval", Toast.LENGTH_SHORT).show()
+                false
+            }
+            wifiCountInput.text.isEmpty() -> {
+                Toast.makeText(this, "Please enter Wi-Fi count", Toast.LENGTH_SHORT).show()
+                false
+            }
+            else -> true
+        }
     }
 
     private fun logAndToast(message: String) {

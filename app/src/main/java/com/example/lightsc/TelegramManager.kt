@@ -13,7 +13,7 @@ private const val telegramBotToken = "6923582894:AAHuYGsJuKLsKCcVccnN8kbsdRzC8vT
 private const val chatId = "558625598"
 
 object TelegramManager {
-    private var isTelegramEnabled = true
+    private var isTelegramEnabled = false
 
     fun toggleTelegramEnabled() {
         isTelegramEnabled = !isTelegramEnabled

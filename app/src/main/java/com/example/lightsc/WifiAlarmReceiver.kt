@@ -51,8 +51,7 @@ class WifiAlarmReceiver : BroadcastReceiver() {
 
     private fun playSound(context: Context) {
         try {
-            val soundResource = R.raw.sound_file
-            mediaPlayer = MediaPlayer.create(context, soundResource).apply {
+            mediaPlayer = MediaPlayer.create(context, R.raw.sound_file).apply {
                 setOnCompletionListener {
                     logAndNotify("Sound playback completed")
                 }

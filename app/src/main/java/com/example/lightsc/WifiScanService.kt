@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 
@@ -20,15 +21,17 @@ class WifiScanService : Service() {
     private var scanInterval: Long = 0
     private val handler = Handler(Looper.getMainLooper())
     private val CHANNEL_ID = "WifiScanServiceChannel"
+    private lateinit var wakeLock: PowerManager.WakeLock
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val interval = intent?.getLongExtra("scanInterval", 0)
-        if (interval != null) {
-            scanInterval = interval
-        }
+        scanInterval = intent?.getLongExtra("scanInterval", 0) ?: 0
         logAndNotify("Received scan interval: $scanInterval milliseconds")
 
         wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "WifiScanService::WakeLock")
+        wakeLock.acquire(scanInterval + 10000) // Принимаем WakeLock на время выполнения сканирования
 
         createNotificationChannel()
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
@@ -78,6 +81,7 @@ class WifiScanService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacks(scanRunnable)
+        wakeLock.release()
         logAndNotify("WifiScanService stopped")
     }
 
